@@ -25,7 +25,7 @@ class WebCam:
         cap = cv2.VideoCapture(1)
         average_emotion = []
         start_time = time.time()
-        while time.time() - start_time < 60:
+        while time.time() - start_time < 10:
             ret, frame = cap.read()
             faces = self.face_classifier.detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
 
@@ -33,7 +33,6 @@ class WebCam:
             for face in faces:
                 # Обработка текущего кадра с лицом
                 response = self.face_rec(frame)
-                print(response)
                 average_emotion.append(response["dominant_emotion"])
                 x, y, w, h = face
                 cv2.putText(frame, text=response["dominant_emotion"], org=(x, y), fontFace=cv2.FONT_HERSHEY_COMPLEX, fontScale=1, color=(255, 255, 255))
@@ -50,9 +49,6 @@ class WebCam:
 
         return Counter(average_emotion).most_common()[0][0]
 
-
     def face_rec(self, frame):
         response = DeepFace.analyze(frame, actions=("emotion",), enforce_detection = False)
         return response[0]
-
-WebCam().live_cam()

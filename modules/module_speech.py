@@ -9,7 +9,7 @@ import librosa
 import sounddevice as sd
 
 
-os.chdir(r'C:/Users/aralm/YandexDisk/Code_Python/NeuroGPT')
+os.chdir('C:/Users/aralm/YandexDisk/Code_Python/NeuroGPT')
 
 from modules.config import FORMAT, channels, chunk, \
     sample_rate, record_seconds, IAM_TOKEN, FOLDER_ID, AccesKey_wwd
@@ -34,11 +34,16 @@ class AudioRecord:
                 if keyword_index >= 0:
                     print(':', end='')
                     recoder.stop()
-                    
-                    sd.play(audio, sample_rate, blocking=True) # воспроизводим звук активации 
-                    print(f" Я Вас слушаю")
-                    
-                    self.record("recorded.wav") # Записываем аудио в wav
+                    try:
+                        sd.play(audio, sample_rate, blocking=True) # воспроизводим звук активации 
+                        print(f" Я Вас слушаю")
+
+                        self.record("recorded.wav") # Записываем аудио в wav
+                    except KeyboardInterrupt:
+                        porcupine.delete()
+                        print('Отмена')
+                        continue
+            
                     self.convert_wav_opus("recorded.wav", "output.opus") # Переводим в opus (Для работы со speechkit)
                     return self.recognise_audio("output.opus")
 
@@ -116,8 +121,4 @@ class AudioRecord:
         """
             Принимает на вход текст. Далее возвращает название сохранённого аудиофайла
         """
-
-
-
-
 

@@ -11,7 +11,7 @@ sample_rate = 16000
 record_seconds = 5
 
 oauth = 'y0_AgAAAAAcCF3KAATuwQAAAADuOB4DttTlXHuoQBCX5JEH6u1vXoxHGok'
-IAM_TOKEN = "t1.9euelZrPl52Lz5iTxpOMlZ6Qxo7Lz-3rnpWamp2SjJKWmIvNy5TNmpmSkpzl8_cqRXRW-e8vXm8u_t3z92pzcVb57y9eby7-zef1656VmpuTlo7PmIuXlJDGkJ6bxpme7_zF656VmpuTlo7PmIuXlJDGkJ6bxpme.3Hb3vz9ndYFtqtSy2nPz5iv4uGYllv3g52rh0etvz0bIVzO7aXn0iSRtZyWC2P2ZxlE2K4eNWvw7CBgQPdicDQ" # IAM token
+IAM_TOKEN = "t1.9euelZrNjpWKi4uViceLjJGMkpXGm-3rnpWamp2SjJKWmIvNy5TNmpmSkpzl8_cAF2VW-e8ETGdw_d3z90BFYlb57wRMZ3D9zef1656VmpibzIqbx8eMyMvOjoyZxoyT7_zF656VmpibzIqbx8eMyMvOjoyZxoyT.rU0jZE9ISb0LoZi4GMBr9rWLOBEli0_jqfOi1OwXAsnGSHP8zVuxD1OOyCxBk-Ga7ixUFwAJp6gD6N_mP_9wBg" # IAM token
 FOLDER_ID = "b1grrvk7mpn7g2604kee" # Folder ID
 
 AccesKey_wwd = '9/TuGZXy8VL7guMdZccKu3KNWo3JuhOF/SZYmj+lzh86egYkpkwk+g=='
