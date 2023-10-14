@@ -23,13 +23,10 @@ def hotkey_thread():
     keyboard.wait('Esc')
 
 
-
-audio = AudioRecord()
-main = SGD('model/model.txt')
-print('[INFO] SGD-классификатор обучен')
-
-
-def main_process(AudioRecord: AudioRecord, SGD: SGD):
+def main_process():
+    Audiorec = AudioRecord()
+    sgd = SGD('model/model.txt')
+    print('[INFO] SGD-классификатор обучен')
     camera = []
     while True:
         try:
@@ -38,9 +35,9 @@ def main_process(AudioRecord: AudioRecord, SGD: SGD):
                 keyword_paths=['model\Филипп_ru_windows_v2_2_0.ppn', 'model\WakeWordGarry.ppn', 'model\Гарри_ru_windows_v2_2_0.ppn'],
                 model_path='model\porcupine_params_ru.pv'
                 )
-            
-            text = AudioRecord.main(porcupine)
-            prediction = SGD.request(text)[1]
+
+            text = Audiorec.main(porcupine)
+            prediction = sgd.request(text)[1]
             print(f'Распознано: "{text}"')
             print(f'Предсказание: "{prediction}"')
             if prediction == 'вебка':
@@ -56,10 +53,10 @@ def main_process(AudioRecord: AudioRecord, SGD: SGD):
 # main_process(audio, main)
 
 #-- Создаём потоки --#
+main_thrd = threading.Thread(target=main_process)
+main_thrd.start()
+
+
 hotkey_thrd = threading.Thread(target=hotkey_thread)
 hotkey_thrd.daemon = True
 hotkey_thrd.start()
-
-
-main_thrd = threading.Thread(target=main_process, args=(audio, main))
-main_thrd.start()
