@@ -1,7 +1,7 @@
 import pyaudio
 
 
-BOT_NAME = "добби"
+BOT_NAME = "филипп"
 filename_wav = "recorded.wav"
 filename_opus = "recorded.opus"
 chunk = 1024
@@ -10,8 +10,14 @@ channels = 1
 sample_rate = 16000
 record_seconds = 5
 
+CAMERA_INDEX = 1 # 1 - внешняя, 0 - встроенная
+PROXIES = {
+
+}
+
+CHAT_GPT_API = "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"
 oauth = 'y0_AgAAAAAcCF3KAATuwQAAAADuOB4DttTlXHuoQBCX5JEH6u1vXoxHGok'
-IAM_TOKEN = "t1.9euelZrNmcuMm5iYx4uKzJPLm8iSju3rnpWamp2SjJKWmIvNy5TNmpmSkpzl8_doXF9W-e9QdBow_t3z9ygLXVb571B0GjD-zef1656Vmpaej5eVlYnKkc_JkM3PkIrM7_zF656Vmpaej5eVlYnKkc_JkM3PkIrM.JZMg9S75WFqX1NoWt4fL8tIuWKFNb_vqW9RGW9jUyryqATrD2ig6b2bM0NhyoIGZs7jBX1x6VUQPGfhDio4bAw" # IAM token
+IAM_TOKEN = "t1.9euelZqMlZvJzpCNz5CKj5KJnsbGyu3rnpWamp2SjJKWmIvNy5TNmpmSkpzl8_cqeDFW-e9kPmF6_d3z92omL1b572Q-YXr9zef1656VmpvNipyJnMfGjYyTyIvHlJaa7_zF656VmpvNipyJnMfGjYyTyIvHlJaa.WqTuDaJd3hwNdLDVDO6BEv2FCbAsXFzsMQEvDPqoMta8kWUD0foqIdSDhap9ypjQXtTpuERWnF4-CND0EApUAg" # IAM token
 FOLDER_ID = "b1grrvk7mpn7g2604kee" # Folder ID
 
 AccesKey_wwd = '9/TuGZXy8VL7guMdZccKu3KNWo3JuhOF/SZYmj+lzh86egYkpkwk+g=='

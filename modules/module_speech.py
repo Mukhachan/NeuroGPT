@@ -12,7 +12,7 @@ import sounddevice as sd
 os.chdir('C:/Users/aralm/YandexDisk/Code_Python/NeuroGPT')
 
 from modules.config import FORMAT, channels, chunk, \
-    sample_rate, record_seconds, IAM_TOKEN, FOLDER_ID, AccesKey_wwd
+    sample_rate, record_seconds, IAM_TOKEN, FOLDER_ID
 
 class AudioRecord:
     def __init__(self) -> None:

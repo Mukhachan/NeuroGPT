@@ -2,13 +2,14 @@ import time
 import cv2
 from deepface import DeepFace
 from collections import Counter
+from .config import CAMERA_INDEX
+# from simple_facerec import SimpleFacerec
 
 class WebCam:
     def __init__(self) -> None:
         self.face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     def camera_indexes(self):
-
         index = 0
         arr = []
         i = 10
@@ -22,7 +23,7 @@ class WebCam:
         return arr        
 
     def live_cam(self):
-        cap = cv2.VideoCapture(1)
+        cap = cv2.VideoCapture(CAMERA_INDEX)
         average_emotion = []
         start_time = time.time()
         while time.time() - start_time < 10:
@@ -51,4 +52,15 @@ class WebCam:
 
     def face_rec(self, frame):
         response = DeepFace.analyze(frame, actions=("emotion",), enforce_detection = False)
+        #face recognition
+        # try:
+        #     dfs = DeepFace.find(img_path = frame, 
+        #             db_path = 'model\Faces', 
+        #             detector_backend = 'opencv'
+        #     )
+        #     print(dfs)
+        # except ValueError:
+        #     return
+        
         return response[0]
+

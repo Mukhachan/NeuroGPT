@@ -1,33 +1,20 @@
 import os
 from modules.config import AccesKey_wwd
-# from modules.module_GPT import GPT
+from modules.module_GPT import GPT
 # from modules.module_screen import Screen
 from modules.module_webcam import WebCam
 from modules.module_speech import AudioRecord
 from SGD import SGD
 import pvporcupine
-import keyboard
-import threading
 os.system('cls')
-
-def my_function():
-    print("Моё сочетание клавиш выполнено!")
-
-def clear_term():
-    os.system('cls')
-
-def hotkey_thread():
-    keyboard.add_hotkey('Ctrl+Alt+A', my_function)
-    keyboard.add_hotkey('Ctrl+Alt+C', clear_term)
-    keyboard.add_hotkey('Ctrl+C', quit)
-    keyboard.wait('Esc')
 
 
 def main_process():
     Audiorec = AudioRecord()
     sgd = SGD('model/model.txt')
     print('[INFO] SGD-классификатор обучен')
-    camera = []
+    camera = None
+    gpt = None
     while True:
         try:
             porcupine = pvporcupine.create(
@@ -35,28 +22,24 @@ def main_process():
                 keyword_paths=['model\Филипп_ru_windows_v2_2_0.ppn', 'model\WakeWordGarry.ppn', 'model\Гарри_ru_windows_v2_2_0.ppn'],
                 model_path='model\porcupine_params_ru.pv'
                 )
-
             text = Audiorec.main(porcupine)
             prediction = sgd.request(text)[1]
             print(f'Распознано: "{text}"')
             print(f'Предсказание: "{prediction}"')
             if prediction == 'вебка':
-                if camera == []:
-                    camera = [WebCam()]
-
-                mood = camera[0].live_cam()
+                if camera == None:
+                    camera = WebCam()
+                mood = camera.live_cam()
                 print(f'I think you {mood}')
+            elif prediction == 'GPT':
+                if gpt == None:
+                    gpt = GPT()
+                print(gpt.request(text))
+
                 
         except KeyboardInterrupt:
             quit()
 
-# main_process(audio, main)
-
-#-- Создаём потоки --#
-main_thrd = threading.Thread(target=main_process)
-main_thrd.start()
+main_process()
 
 
-hotkey_thrd = threading.Thread(target=hotkey_thread)
-hotkey_thrd.daemon = True
-hotkey_thrd.start()
