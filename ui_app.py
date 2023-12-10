@@ -1,13 +1,15 @@
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtGui import QPixmap
-import sys, os
-os.system('cls')
+from PyQt5.QtWidgets import QMainWindow
+import sys
+from main import AiLogic
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        self.AiLogic = AiLogic()
+        self.AiLogic.start() # Запускаем ИИ
+
         uic.loadUi('design.ui', self)
         self.btn_handlers()
         self.setFixedSize(400, 600)
@@ -32,13 +34,13 @@ class MainWindow(QMainWindow):
         """
         self.inspeechLayout_2.hide()
 
-def application():
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
+# def application():
+#     app = QApplication(sys.argv)
+#     window = MainWindow()
+#     window.show()
 
-    sys.exit(app.exec_())
+#     sys.exit(app.exec_())
 
 
-if __name__ == '__main__':
-    application()
+# if __name__ == '__main__':
+#     application()

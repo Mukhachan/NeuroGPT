@@ -7,7 +7,7 @@ from pvporcupine import Porcupine
 from pvrecorder import PvRecorder
 import librosa
 import sounddevice as sd
-
+import threading
 
 os.chdir('C:/Users/aralm/YandexDisk/Code_Python/NeuroGPT')
 
@@ -18,7 +18,7 @@ class AudioRecord:
     def __init__(self) -> None:
         pass
 
-    def main(self, porcupine: Porcupine) -> None:
+    def wake_word_check(self, porcupine: Porcupine) -> None:
         """
         porcupine: Porcupine
             Мониторит микрофон, на Wake Word, после 
@@ -33,12 +33,9 @@ class AudioRecord:
                 keyword_index = porcupine.process(recoder.read())
                 if keyword_index >= 0:
                     print(':', end='')
-                    recoder.stop()
                     try:
-                        sd.play(audio, sample_rate, blocking=True) # воспроизводим звук активации 
-                        print(f" Я Вас слушаю")
-
-                        self.record("recorded.wav") # Записываем аудио в wav
+                        return True
+                        self.record(audio, recoder, audio, "recorded.wav") # Записываем аудио в wav
                     except KeyboardInterrupt:
                         porcupine.delete()
                         print('Отмена')
@@ -46,16 +43,21 @@ class AudioRecord:
             
                     self.convert_wav_opus("recorded.wav", "output.opus") # Переводим в opus (Для работы со speechkit)
                     return self.recognise_audio("output.opus")
-
         finally:
             porcupine.delete()
             recoder.delete()
 
 
-    def record(self, filename_wav) -> bool:
+    def record(self, recoder, audio, filename_wav) -> bool:
         """
             Эта функция служит для записи аудио в формат wav
         """
+        if recoder: recoder.stop()
+        audio_thread = threading.Thread(target=sd.play, kwargs={"data" : audio, "samplerate": sample_rate, "blocking": True})
+        audio_thread.start()
+        # sd.play(audio, sample_rate, blocking=True) # воспроизводим звук активации 
+        print(f" Я Вас слушаю")
+        
         p = pyaudio.PyAudio()
         # открыть объект потока как ввод и вывод
         stream = p.open(format=FORMAT,

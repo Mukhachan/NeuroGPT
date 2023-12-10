@@ -2,7 +2,7 @@ import time
 import cv2
 from deepface import DeepFace
 from collections import Counter
-from .config import CAMERA_INDEX
+from modules.config import CAMERA_INDEX
 # from simple_facerec import SimpleFacerec
 
 class WebCam:
@@ -40,7 +40,7 @@ class WebCam:
                 new_frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
                 new_frame_available = True  # Устанавливаем флаг, что новый кадр с лицом доступен
 
-            cv2.imshow("Detecting..", new_frame if new_frame_available else frame)  # Показываем новый кадр с лицом, если он доступен, иначе исходный кадр
+            cv2.imshow("Detecting..", new_frame if new_frame_available else frame)
 
             if cv2.waitKey(30) == 27:
                 break

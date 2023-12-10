@@ -17,7 +17,7 @@ PROXIES = {
 
 CHAT_GPT_API = "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"
 oauth = 'y0_AgAAAAAcCF3KAATuwQAAAADuOB4DttTlXHuoQBCX5JEH6u1vXoxHGok'
-IAM_TOKEN = "t1.9euelZqMlZvJzpCNz5CKj5KJnsbGyu3rnpWamp2SjJKWmIvNy5TNmpmSkpzl8_cqeDFW-e9kPmF6_d3z92omL1b572Q-YXr9zef1656VmpvNipyJnMfGjYyTyIvHlJaa7_zF656VmpvNipyJnMfGjYyTyIvHlJaa.WqTuDaJd3hwNdLDVDO6BEv2FCbAsXFzsMQEvDPqoMta8kWUD0foqIdSDhap9ypjQXtTpuERWnF4-CND0EApUAg" # IAM token
+IAM_TOKEN = "t1.9euelZrPjM2Oz5qQkMmVmJ2ZksaWzO3rnpWamp2SjJKWmIvNy5TNmpmSkpzl8_ctIlNU-e9mK35z_t3z921QUFT572YrfnP-zef1656VmsrKx42cjJ2eyZ2UmJSalZmX7_zF656VmsrKx42cjJ2eyZ2UmJSalZmX.EMaySWUmjOP9rCAMPRPQDy3nBRthgv21gsymXGjU1O38QUXKFFUu9RvQBAwhscw7gJwAk9WezE4AL_lTI8zoAg" # IAM token
 FOLDER_ID = "b1grrvk7mpn7g2604kee" # Folder ID
 
 AccesKey_wwd = '9/TuGZXy8VL7guMdZccKu3KNWo3JuhOF/SZYmj+lzh86egYkpkwk+g=='

@@ -1,4 +1,4 @@
-from config import CHAT_GPT_API, PROXIES
+from modules.config import CHAT_GPT_API, PROXIES
 import g4f
 class GPT:
     def __init__(self) -> None:
@@ -14,12 +14,3 @@ class GPT:
         
         return response
 
-
-
-def main():
-    gpt = GPT()
-    while True:
-        text = input('Введи запрос: ')
-        print(gpt.request(prompt=text))
-
-main()
