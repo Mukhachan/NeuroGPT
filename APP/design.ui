@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Филипп Ai</string>
+   <string>Гарри Ai</string>
   </property>
   <property name="layoutDirection">
    <enum>Qt::LeftToRight</enum>
@@ -103,7 +103,7 @@
         <string notr="true">color: rgb(255, 255, 255);</string>
        </property>
        <property name="text">
-        <string>Меня зовут, Филипп!</string>
+        <string>Меня зовут, Гарри!</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -261,7 +261,7 @@ background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0.00568182, s
         <string notr="true">color: rgb(255, 255, 255);</string>
        </property>
        <property name="text">
-        <string>Скажи &quot;Филипп&quot; и
+        <string>Скажи &quot;Гарри&quot; или
 произнеси команду</string>
        </property>
        <property name="scaledContents">

@@ -1,3 +1,4 @@
+from pprint import pprint
 import time
 import cv2
 from deepface import DeepFace
@@ -26,7 +27,7 @@ class WebCam:
         cap = cv2.VideoCapture(CAMERA_INDEX)
         average_emotion = []
         start_time = time.time()
-        while time.time() - start_time < 10:
+        while time.time() - start_time < 30:
             ret, frame = cap.read()
             faces = self.face_classifier.detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
 
@@ -52,15 +53,23 @@ class WebCam:
 
     def face_rec(self, frame):
         response = DeepFace.analyze(frame, actions=("emotion",), enforce_detection = False)
-        #face recognition
+
         # try:
-        #     dfs = DeepFace.find(img_path = frame, 
-        #             db_path = 'model\Faces', 
-        #             detector_backend = 'opencv'
-        #     )
-        #     print(dfs)
-        # except ValueError:
-        #     return
+        #     detect = DeepFace.verify(frame, 'model\Faces\Artem\Artem6.jpg') # 'model\Faces\Artem\Artem2.jpg',
+        #     pprint(detect)
+        # except ValueError as e:
+        #     print(f'Лица нет\n{e}')
+
+        # face recognition
+        try:
+            dfs = DeepFace.find(img_path = frame, 
+                    db_path = 'model\Faces', 
+                    enforce_detection = False,
+                    silent=True
+            )
+            pprint(dfs)
+        except ValueError:
+            pass
         
         return response[0]
 

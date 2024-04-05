@@ -13,6 +13,10 @@ from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
 import threading
+import multiprocessing
+import os
+
+
 
 class WakeWordRecognizing(QObject):
     wake_word_detected = pyqtSignal(str)
@@ -76,11 +80,10 @@ class WakeWordThread(QThread):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, WakeWordRecognizing: WakeWordRecognizing, Audiorec: AudioRecord, sgd: SGD) -> None:
+    def __init__(self, Audiorec: AudioRecord, sgd: SGD) -> None:
         super(MainWindow, self).__init__()
         self.Audiorec = Audiorec
         self.sgd = sgd
-        self.WakeWordRecognizing = WakeWordRecognizing
         uic.loadUi('APP/design.ui', self)
 
         self.btn_handlers()
@@ -95,55 +98,29 @@ class MainWindow(QMainWindow):
         self.Cancel.clicked.connect(self.cancel_btn_pressed)
         print('Хендлеры UI успешно запущены')
 
-    # @pyqtSlot(str)
     def main_btn_pressed(self):
         """
             Вызывается при нажатии на главную кнопку, а затем запускает основной процесс работы ИИ
         """
         print('Кнопка нажата')
-        
-        class MyThread(threading.Thread):
-            def __init__(self, target, args=()):
-                super().__init__(target=target, args=args)
-                self._result = None
 
-            def run(self):
-                self._result = self._target(*self._args)
-
-            def join(self):
-                super().join()
-                return self._result
-        
-
-        subthread1 = threading.Thread(target=self.inspeechLayout_2.show)
+        self.inspeechLayout_2.show()
         
         audio, sample_rate = librosa.load('model\Sounds\Activate.mp3')
-        audio_thread1 = MyThread(target=self.Audiorec.record, args=[None, audio, "recorded.wav"])
-        audio_thread2 = MyThread(target=self.Audiorec.convert_wav_opus, args=["recorded.wav", "output.opus"])
-        # audio_thread3 = MyThread(target=self.Audiorec.recognise_audio, args=["output.opus"]) 
-        subthread2 = threading.Thread(target=self.inspeechLayout_2.hide)
+        audio_thread1 = multiprocessing.Process(target=self.Audiorec.record, args=[None, audio, "recorded.wav"])
+        audio_thread2 = multiprocessing.Process(target=self.Audiorec.convert_wav_opus, args=["recorded.wav", "output.opus"])
         
-        subthread1.start()
-        subthread1.join()
-
-        audio_thread1.start()
-        audio_thread1.join()
+        try:
+            audio_thread1.start()
+            audio_thread1.join()
+            
+            audio_thread2.run()
+            audio_thread2.join()
+        except Exception as e:
+            print(e)
+            quit('Да ебись оно всё конём')
+        # self.inspeechLayout_2.hide()
         
-        audio_thread2.start()
-        audio_thread2.join()
-        
-        # audio_thread3.start()
-        # text = audio_thread3.join()
-        # print(text)
-
-        subthread2.start()
-        subthread2.join()
-
-
-        # sgd_process(camera=None, sgd=self.sgd, gpt=None, text=text)
-        
-
-
 
     def cancel_btn_pressed(self):
         """
@@ -152,57 +129,62 @@ class MainWindow(QMainWindow):
         self.inspeechLayout_2.hide()
 
 
-# def main_process():
-#     Audiorec = AudioRecord()
-#     sgd = SGD('model/model.txt')
-#     print('[INFO] SGD-классификатор обучен')
-#     camera = None
-#     gpt = None
-#     while True:
-#         try:
-#             porcupine = pvporcupine.create(
-#                 access_key=AccesKey_wwd,
-#                 keyword_paths=[
-#                     'model\Филипп_ru_windows_v2_2_0.ppn', 
-#                     'model\WakeWordGarry.ppn', 
-#                     'model\Гарри_ru_windows_v2_2_0.ppn'
-#                 ],
-#                 model_path='model\porcupine_params_ru.pv'
-#                 )
-#             text = Audiorec.main(porcupine)
-#             prediction = sgd.request(text)[1]
-#             print(f'Распознано: "{text}"')
-#             print(f'Предсказание: "{prediction}"')
-#             if prediction == 'вебка':
-#                 if camera == None:
-#                     camera = WebCam()
-#                 mood = camera.live_cam()
-#                 print(f'I think you {mood}')
-#             elif prediction == 'GPT':
-#                 if gpt == None:
-#                     gpt = GPT()
-#                 print(gpt.request(text))
-
-#         except KeyboardInterrupt:
-#             quit()
-# main_process()
-def application():
-    Audiorec = AudioRecord()
-    sgd = SGD('model/model.txt') 
-    print('[INFO] SGD-классификатор обучен')
+def create_window( Audiorec, sgd):
     app = QApplication(sys.argv)
-
+    window = MainWindow(Audiorec=Audiorec, sgd=sgd) 
+    window.show()
     
-    wake_word_thread = WakeWordThread(Audiorec=Audiorec, sgd=sgd)
-
-    window = MainWindow(WakeWordRecognizing=wake_word_thread, Audiorec=Audiorec, sgd=sgd)
-    window = threading.Thread(target=window.show)
-    window.start() # Запускаем UI
-
-    wake_word_thread.start()
-    wake_word_thread.wake_word_detected.connect(window.main_btn_pressed)
-    
-
     sys.exit(app.exec())
 
-application()
+def console_side_voice(Audiorec: AudioRecord, sgd: SGD):
+    camera = None
+    gpt = None
+
+    while True:
+        try:
+            porcupine = pvporcupine.create(
+                access_key=AccesKey_wwd,
+                keyword_paths=[
+                    # 'model\Филипп_ru_windows_v2_2_0.ppn', 
+                    'model\WakeWordGarry.ppn', 
+                    'model\Гарри_ru_windows_v2_2_0.ppn'
+                ],
+                model_path='model\porcupine_params_ru.pv'
+                )
+            text = Audiorec.wake_word_check(porcupine)
+
+            prediction = sgd.request(text)[1]
+            print(f'Распознано: "{text}"')
+            print(f'Предсказание: "{prediction}"')
+
+            if prediction == 'вебка':
+                if camera == None:
+                    camera = WebCam()
+                mood = camera.live_cam()
+                print(f'I think you {mood}')
+
+            elif prediction == 'GPT':
+                if gpt == None:
+                    gpt = GPT()
+                gpt_response = gpt.request(text)
+                Audiorec.synth_speech(gpt_response)
+                print(gpt_response)
+
+        except KeyboardInterrupt:
+            quit()
+
+
+def main_process():
+    Audiorec = AudioRecord()
+    sgd = SGD('model/model.txt')
+    print('[INFO] SGD-классификатор обучен')
+
+    window = multiprocessing.Process(target=create_window, args=[Audiorec, sgd])
+    console_side = multiprocessing.Process(target=console_side_voice, args=[Audiorec, sgd])
+
+    window.start()
+    console_side.start()
+
+ 
+if __name__ == '__main__':
+    main_process()

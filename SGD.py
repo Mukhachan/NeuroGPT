@@ -1,3 +1,4 @@
+import os
 import re, io
 import numpy as np
 from Stemmer import Stemmer
@@ -5,6 +6,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import Pipeline
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 class SGD:
     def __init__(self, file) -> None:

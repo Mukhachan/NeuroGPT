@@ -7,12 +7,29 @@ from pvporcupine import Porcupine
 from pvrecorder import PvRecorder
 import librosa
 import sounddevice as sd
+import soundfile as sf
 import threading
+import io
+import multiprocessing
+
+import requests
+import urllib3
+import uuid
+import ssl
+from modules.config import FORMAT, channels, chunk, \
+    sample_rate, record_seconds, FOLDER_ID, \
+    SberAuth, synth_format, synth_voice, filename_ogg, oauth
+
+
+try: _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError: pass
+else: ssl._create_default_https_context = _create_unverified_https_context
+
+
 
 os.chdir('C:/Users/aralm/YandexDisk/Code_Python/NeuroGPT')
 
-from modules.config import FORMAT, channels, chunk, \
-    sample_rate, record_seconds, IAM_TOKEN, FOLDER_ID
+
 
 class AudioRecord:
     def __init__(self) -> None:
@@ -34,15 +51,15 @@ class AudioRecord:
                 if keyword_index >= 0:
                     print(':', end='')
                     try:
-                        return True
-                        self.record(audio, recoder, audio, "recorded.wav") # Записываем аудио в wav
+                        self.record(recoder, audio, "recorded.wav") # Записываем аудио в wav
+                        
                     except KeyboardInterrupt:
                         porcupine.delete()
                         print('Отмена')
                         continue
             
                     self.convert_wav_opus("recorded.wav", "output.opus") # Переводим в opus (Для работы со speechkit)
-                    return self.recognise_audio("output.opus")
+                    return self.recognise_audio("output.opus")  
         finally:
             porcupine.delete()
             recoder.delete()
@@ -53,10 +70,9 @@ class AudioRecord:
             Эта функция служит для записи аудио в формат wav
         """
         if recoder: recoder.stop()
-        audio_thread = threading.Thread(target=sd.play, kwargs={"data" : audio, "samplerate": sample_rate, "blocking": True})
-        audio_thread.start()
-        # sd.play(audio, sample_rate, blocking=True) # воспроизводим звук активации 
-        print(f" Я Вас слушаю")
+
+        audio_thread = multiprocessing.Process(target=sd.play, kwargs={"data" : audio, "samplerate": sample_rate, "blocking": True})
+
         
         p = pyaudio.PyAudio()
         # открыть объект потока как ввод и вывод
@@ -68,6 +84,9 @@ class AudioRecord:
                         frames_per_buffer=chunk)
         frames = []
 
+        
+        audio_thread.run()
+        print(f" Я Вас слушаю")
         print("Произнесите команду..")
         for i in range(int(sample_rate / chunk * record_seconds)):
             data = stream.read(chunk)
@@ -110,8 +129,8 @@ class AudioRecord:
         ])
 
         url = urllib.request.Request("https://stt.api.cloud.yandex.net/speech/v1/stt:recognize?%s" % params, data=audiodata)
-        # Authentication via the IAM token.
-        url.add_header("Authorization", "Bearer %s" % IAM_TOKEN)
+
+        url.add_header("Authorization", "Bearer %s" % self.get_iam())
 
         responseData = urllib.request.urlopen(url).read().decode('UTF-8')
         decodedData = json.loads(responseData)
@@ -119,8 +138,57 @@ class AudioRecord:
         if decodedData.get("error_code") is None:
             return decodedData.get("result")
 
-    def synthesize_speech(self, text) -> str:
+    def play_and_del(self):
+        audio, sample_rate = sf.read(filename_ogg)
+        sd.play(audio, samplerate=sample_rate, blocking=True)
+        os.remove(filename_ogg)
+
+    def synth_speech(self, text) -> bool:
         """
             Принимает на вход текст. Далее возвращает название сохранённого аудиофайла
         """
+
+        headers = {
+            'Authorization' : f"Bearer {self.get_access()['access_token']}",
+            'Content-Type' : 'application/text',
+        }
+        # text = 'Привет, как дела? Какой-то длинный и очень интересный текст'
+
+        response = urllib3.request('POST', 
+                                f'https://smartspeech.sber.ru/rest/v1/text:synthesize?format={synth_format}&voice={synth_voice}', 
+                                headers=headers, body=text)
+        
+
+        with io.BytesIO(response.data) as f:
+            data, sample_rate = sf.read(f)
+            sf.write(filename_ogg, data, sample_rate)
+
+        proc = multiprocessing.Process(target=self.play_and_del)
+        proc.run()
+
+        return True
+
+    def get_access(self):
+        headers = {
+            'Authorization': f'Basic {SberAuth}',
+            'RqUID': str(uuid.uuid4()),
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        data = {
+            'scope': 'SALUTE_SPEECH_PERS'
+        }
+        response = requests.post('https://ngw.devices.sberbank.ru:9443/api/v2/oauth', headers=headers, data=data)
+
+        return json.loads(response.text.replace('\n', ''))
+    
+    def get_iam(self):
+
+        headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        data = '{"yandexPassportOauthToken": "' + oauth + '"}'
+
+        response = requests.post('https://iam.api.cloud.yandex.net/iam/v1/tokens', headers=headers, data=data)
+
+        return json.loads(response.text.replace('\n', ''))['iamToken']
 
