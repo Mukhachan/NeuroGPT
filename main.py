@@ -1,142 +1,88 @@
 import sys
-
+from time import sleep
 import librosa
 from modules.config import AccesKey_wwd
 from modules.module_GPT import GPT
 # from modules.module_screen import Screen
+from googletrans import Translator
 from modules.module_webcam import WebCam
 from modules.module_speech import AudioRecord
 from SGD import SGD
 import pvporcupine
 
-from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtCore import pyqtSignal, QObject, QThread
-import threading
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtWidgets import QApplication,  QMainWindow
 import multiprocessing
-import os
 
 
-
-class WakeWordRecognizing(QObject):
-    wake_word_detected = pyqtSignal(str)
-    def __init__(self, Audiorec: AudioRecord, sgd: SGD) -> None:
-        super(WakeWordRecognizing, self).__init__()
-        self.Audiorec = Audiorec
-        self.sgd = sgd
-
-    def run(self):
-        self.camera = None
-        self.gpt = None
-        while True:
-            try:
-                porcupine = pvporcupine.create(
-                    access_key=AccesKey_wwd,
-                    keyword_paths=[
-                        'model\Филипп_ru_windows_v2_2_0.ppn', 
-                        'model\WakeWordGarry.ppn', 
-                        'model\Гарри_ru_windows_v2_2_0.ppn'
-                    ],
-                    model_path='model\porcupine_params_ru.pv'
-                    )
-                if self.Audiorec.wake_word_check(porcupine):
-                    self.wake_word_detected.emit("WakeWord обнаружен")
-                    # audio, sample_rate = librosa.load('model\Sounds\Activate.mp3')
-                    # self.Audiorec.record(recoder=None, audio=audio, filename_wav="recorded.wav")
-                    # self.Audiorec.convert_wav_opus("recorded.wav", "output.opus")
-                    # text = self.Audiorec.recognise_audio("output.opus")
-
-                    # sgd_process(camera=self.camera, sgd=self.sgd, gpt=self.gpt, text=text)
-
-            except KeyboardInterrupt:
-                quit()
-
-def sgd_process(camera: WebCam | None, sgd: SGD | None, gpt: GPT | None, text: str) -> None:
-    prediction = sgd.request(text)[1]
-    print(f'Распознано: "{text}"')
-    print(f'Предсказание: "{prediction}"')
-    if prediction == 'вебка': # - Запускает оценку эмоция
-        if camera == None:
-            camera = WebCam()
-        mood = camera.live_cam()
-        print(f'I think you {mood}')
-    elif prediction == 'GPT': # - Отправляет текст в GPT и ждёт ответ
-        if gpt == None:
-            gpt = GPT()
-        print(gpt.request(text))        
-
-class WakeWordThread(QThread):
-    wake_word_detected = pyqtSignal(str)
-    def __init__(self, Audiorec: AudioRecord, sgd: SGD) -> None:
-        super().__init__()
-        self.Audiorec = Audiorec
-        self.sgd = sgd
-
-    def run(self):
-        wake_word_detector = WakeWordRecognizing(self.Audiorec, self.sgd)
-        wake_word_detector.wake_word_detected.connect(self.wake_word_detected.emit)
-        wake_word_detector.run()
-    
-
+translator = Translator()
 
 class MainWindow(QMainWindow):
-    def __init__(self, Audiorec: AudioRecord, sgd: SGD) -> None:
-        super(MainWindow, self).__init__()
-        self.Audiorec = Audiorec
+    def __init__(self, sgd: SGD) -> None:
+        super().__init__()
+        
         self.sgd = sgd
+        self.gpt = GPT()
+        self.Audiorec = AudioRecord(self.sgd, self.gpt)
+
         uic.loadUi('APP/design.ui', self)
 
-        self.btn_handlers()
+        audio, sample_rate = librosa.load('model\Sounds\Activate.mp3')
+        self.voiceButton.clicked.connect(self.main_btn_pressed)
+        self.Cancel.clicked.connect(self.cancel_btn_pressed)
+        print('Хендлеры UI успешно запущены')
+
         self.setFixedSize(400, 600)
         self.inspeechLayout_2.hide()
 
     def run(self):
         app = QtWidgets.QApplication(sys.argv)
 
-    def btn_handlers(self): 
-        self.voiceButton.clicked.connect(self.main_btn_pressed)
-        self.Cancel.clicked.connect(self.cancel_btn_pressed)
-        print('Хендлеры UI успешно запущены')
-
     def main_btn_pressed(self):
         """
             Вызывается при нажатии на главную кнопку, а затем запускает основной процесс работы ИИ
         """
         print('Кнопка нажата')
-
         self.inspeechLayout_2.show()
-        
-        audio, sample_rate = librosa.load('model\Sounds\Activate.mp3')
-        audio_thread1 = multiprocessing.Process(target=self.Audiorec.record, args=[None, audio, "recorded.wav"])
-        audio_thread2 = multiprocessing.Process(target=self.Audiorec.convert_wav_opus, args=["recorded.wav", "output.opus"])
-        
+
         try:
-            audio_thread1.start()
-            audio_thread1.join()
-            
-            audio_thread2.run()
-            audio_thread2.join()
+            self.Audiorec.finished.connect(self.on_finished)
+            self.Audiorec.process_audio.connect(self.on_change_gpt)
+            self.gpt.process.connect(self.on_change_gpt)
+            self.Audiorec.start()
+
         except Exception as e:
             print(e)
-            quit('Да ебись оно всё конём')
-        # self.inspeechLayout_2.hide()
-        
+            quit('Всем спасибо. Всем пока')
+
+    def on_change_gpt(self, state):
+        self.listening.setText(state)
+
+    def on_finished(self):
+        print("Процедура завершена")
+        self.inspeechLayout_2.hide()
+        self.listening.setText("Слушаю")
 
     def cancel_btn_pressed(self):
         """
             Нужна для отмены работы ИИ
         """
+        self.Audiorec.terminate()
         self.inspeechLayout_2.hide()
+        print("Процедура прервана")
 
 
-def create_window( Audiorec, sgd):
+def create_window(sgd):
     app = QApplication(sys.argv)
-    window = MainWindow(Audiorec=Audiorec, sgd=sgd) 
+    window = MainWindow(sgd) 
     window.show()
     
     sys.exit(app.exec())
 
-def console_side_voice(Audiorec: AudioRecord, sgd: SGD):
+def console_side_voice(sgd: SGD):
+    Audiorec = AudioRecord(sgd)
+    print('[INFO] SGD-классификатор обучен')
+
     camera = None
     gpt = None
 
@@ -145,46 +91,57 @@ def console_side_voice(Audiorec: AudioRecord, sgd: SGD):
             porcupine = pvporcupine.create(
                 access_key=AccesKey_wwd,
                 keyword_paths=[
-                    # 'model\Филипп_ru_windows_v2_2_0.ppn', 
-                    'model\WakeWordGarry.ppn', 
-                    'model\Гарри_ru_windows_v2_2_0.ppn'
+                    'model\Гарри_ru_windows_v3_0_0.ppn', 
                 ],
                 model_path='model\porcupine_params_ru.pv'
                 )
             text = Audiorec.wake_word_check(porcupine)
+            if len(text) == 0: continue
 
             prediction = sgd.request(text)[1]
             print(f'Распознано: "{text}"')
             print(f'Предсказание: "{prediction}"')
 
-            if prediction == 'вебка':
+            if 'вебка' in prediction:
                 if camera == None:
                     camera = WebCam()
-                mood = camera.live_cam()
-                print(f'I think you {mood}')
+                num = int(prediction.split()[1])
+                mood, name = camera.live_cam(num)
+                print(f'Мне кажется ты {mood}')
+                print(f'Тебя зовут {name}')                
+                if name: 
+                    print(f'Тебя зовут {name}')
+                    Audiorec.synth_speech(
+                        f"Тебя зовут {translator.translate(name, dest = 'ru').text}",
+                        block=True
+                    )
+                if mood:
+                    print(f'Мне кажется ты {mood}')
+                    Audiorec.synth_speech(
+                        f"Мне кажется ты {translator.translate(mood, dest = 'ru').text}"
+                    )
 
             elif prediction == 'GPT':
                 if gpt == None:
                     gpt = GPT()
                 gpt_response = gpt.request(text)
-                Audiorec.synth_speech(gpt_response)
                 print(gpt_response)
+                Audiorec.synth_speech(gpt_response)
+
 
         except KeyboardInterrupt:
             quit()
 
 
 def main_process():
-    Audiorec = AudioRecord()
-    sgd = SGD('model/model.txt')
-    print('[INFO] SGD-классификатор обучен')
 
-    window = multiprocessing.Process(target=create_window, args=[Audiorec, sgd])
-    console_side = multiprocessing.Process(target=console_side_voice, args=[Audiorec, sgd])
+    sgd = SGD("model/model.txt")
+    window = multiprocessing.Process(target=create_window, args=[sgd])
+    # console_side = multiprocessing.Process(target=console_side_voice, args=[sgd])
 
     window.start()
-    console_side.start()
+    # console_side.start()
 
- 
+    
 if __name__ == '__main__':
     main_process()

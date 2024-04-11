@@ -1,36 +1,60 @@
 import os
 import re, io
+import joblib
 import numpy as np
 from Stemmer import Stemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDClassifier
+from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
+import json
+print("SGD libs imported")
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 class SGD:
-    def __init__(self, file) -> None:
+    def __init__(self, file = "model/model.txt") -> None:
         self.file = file
-        self.text_clf = self.openai()[0]
-        self.D = self.openai()[1]
+        self.open_ai = self.openai()
+        self.text_clf = self.open_ai[0]
+        self.D = self.open_ai[1]
         
     def openai(self):
-        data = self.load_data()
-        D = self.train_test_split(data)
-        text_clf = Pipeline([
-                        ('tfidf', TfidfVectorizer()),
-                        ('clf', SGDClassifier(loss='hinge')),
-                        ])
-        text_clf.fit(D['train']['x'], D['train']['y'])
+        print()
+        if not (os.path.exists("model/sgd_dict.json")):
+            print("D - не найден. Тренировка")
+            data = self.load_data()
+            D = self.train_test_split(data)
+            with open("model/sgd_dict.json", 'w') as f:
+                json.dump(D, f)
+        else:
+            print("D - обнаружен. Загружаем")
+            D = json.load(open("model/sgd_dict.json", encoding='utf-8'))
+        
+        if not (os.path.exists("model/sgd_pipeline.pkl")):
+            print("Pipeline - не найден. Тренировка")
+            text_clf = Pipeline([
+                            ('tfidf', TfidfVectorizer()),
+                            ('clf', SGDClassifier(loss='hinge')),
+                            ])
+            parameters = {}
+            text_clf = GridSearchCV(text_clf, parameters, cv=2, verbose=1)
+            text_clf.fit(D['train']['x'], D['train']['y'])
+            
+            joblib.dump(text_clf.best_estimator_, 'model/sgd_pipeline.pkl', compress = 1)
+        else:
+            print("Pipeline - обнаружен. Загружаем")
+            text_clf = joblib.load("model/sgd_pipeline.pkl")
+        print()
         return text_clf, D
 
 
-    def request(self, text):
+    def request(self, text) -> tuple[str, str]:
         # Начало тестирования программы
         zz = []
         zz.append(text)
-        predicted = self.text_clf.predict( self.D['train']['x'] )
+        predicted = self.text_clf.predict(self.D['train']['x'] )
         predicted = self.text_clf.predict(zz) 
         answer = predicted[0].strip()
         # with io.open('model/model.txt', mode='a', encoding='utf-8') as f:
