@@ -1,7 +1,11 @@
+import json
 import sys
 from time import sleep
+import time
 import librosa
-from modules.config import AccesKey_wwd
+import numpy as np
+import pyaudio
+from modules.config import AccesKey_wwd, prompt_template, threshold_ratio
 from modules.module_GPT import GPT
 # from modules.module_screen import Screen
 from googletrans import Translator
@@ -13,6 +17,27 @@ import pvporcupine
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QApplication,  QMainWindow
 import multiprocessing
+import sys
+import argparse
+
+parser = argparse.ArgumentParser(add_help=False)
+
+parser.add_argument(
+    '-t', '--threshhold', 
+    choices=[0, 1],
+    type=int, 
+    help='Запустить сканирование шума (Рекомендуется при каждом запуске)',
+    default=1
+)
+parser.add_argument(
+    '-c', '--console',
+    choices=[0, 1],
+    type=int, 
+    help="Запустить WakeWord",
+    default=1
+)
+args = parser.parse_args()
+
 
 
 translator = Translator()
@@ -92,11 +117,15 @@ def console_side_voice(sgd: SGD):
                 access_key=AccesKey_wwd,
                 keyword_paths=[
                     'model\Гарри_ru_windows_v3_0_0.ppn', 
+                    'model\Гарри_ru_windows_v3_0_0_1.ppn'
                 ],
                 model_path='model\porcupine_params_ru.pv'
                 )
             text = Audiorec.wake_word_check(porcupine)
-            if len(text) == 0: continue
+            if len(text) == 0: 
+                print("Текст пуст. Заново")
+                print(text)
+                continue
 
             prediction = sgd.request(text)[1]
             print(f'Распознано: "{text}"')
@@ -118,29 +147,96 @@ def console_side_voice(sgd: SGD):
                 if mood:
                     print(f'Мне кажется ты {mood}')
                     Audiorec.synth_speech(
-                        f"Мне кажется ты {translator.translate(mood, dest = 'ru').text}"
+                        f"Мне кажется ты {translator.translate(mood, dest = 'ru').text}",
+                        block=True
                     )
 
             elif prediction == 'GPT':
                 if gpt == None:
                     gpt = GPT()
                 gpt_response = gpt.request(text)
-                print(gpt_response)
                 Audiorec.synth_speech(gpt_response)
-
 
         except KeyboardInterrupt:
             quit()
 
+def noise_treshhold(sample_seconds=3):
+    FORMAT = pyaudio.paInt16
+    CHANNELS = 1
+    RATE = 44100
+    CHUNK = 1024
+    
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+
+    print(f"Запись образца тишины началась.\nПомолчите пожалуйста в течение {sample_seconds} секунд...\n")
+
+    frames = []
+    for _ in range(int(RATE / CHUNK * sample_seconds)):
+        data = stream.read(CHUNK)
+        frames.append(data)
+
+    print("Запись образца тишины завершена.")
+
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+
+    # Преобразование данных в numpy массив и вычисление среднего значения громкости
+    np_frames = np.frombuffer(b''.join(frames), dtype=np.int16)
+    volume = np.abs(np_frames).mean() * threshold_ratio
+
+    with open('model/silence_treshhold.cfg', 'w') as f:
+        f.write(str(volume))
+
+    return volume
+
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                    rate=RATE, input=True,
+                    frames_per_buffer=CHUNK)
+
+    frames = []
+    print('Берём образец тишины, помолчите')
+    start = time.time()
+    while time.time() - start <=3:
+        data = stream.read(CHUNK)
+        frames.append(data)
+
+        # Преобразовать аудио в массив NumPy
+        audio_data = np.frombuffer(data, dtype=np.int16)
+
+    average = sum(audio_data)/len(audio_data)
+    silence_threshold = 0.0001 * average
+    with open('model/silence_treshhold.cfg', 'w') as f:
+        f.write(str(silence_threshold))
+
+    print('Образец тишины благополучно взят:', silence_threshold)
+
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+
+    
+
 
 def main_process():
+    with open('model/prompt.json', 'w', encoding='utf-8') as f:
+        json.dump(prompt_template, f)
 
     sgd = SGD("model/model.txt")
     window = multiprocessing.Process(target=create_window, args=[sgd])
-    # console_side = multiprocessing.Process(target=console_side_voice, args=[sgd])
+    console_side = multiprocessing.Process(target=console_side_voice, args=[sgd])
+    silence_test = multiprocessing.Process(target=noise_treshhold)
 
     window.start()
-    # console_side.start()
+    if args.threshhold:
+        silence_test.start()
+        silence_test.join()
+    if args.console:
+        console_side.start()
 
     
 if __name__ == '__main__':

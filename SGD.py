@@ -8,7 +8,6 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 import json
-print("SGD libs imported")
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"

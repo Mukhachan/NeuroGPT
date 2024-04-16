@@ -1,6 +1,7 @@
+import json
+from pprint import pprint
 import requests
-from modules.config import FOLDER_ID, YANDEX_GPT_IDENTIFY, YANDEX_GPT_API, \
-                            maxTokens
+from modules.config import YANDEX_GPT_API, prompt_template
 from PyQt5.QtCore import QThread, pyqtSignal
 
 
@@ -9,33 +10,23 @@ class GPT(QThread):
     def __init__(self) -> None:
         super().__init__()
 
-    def request(self, prompt) -> str:
-        user_name = open(r"model\user_name.cfg", encoding='utf-8').read()
-        prompt = {
-            "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite/latest",
-            "completionOptions": {
-                "stream": False,
-                "temperature": 0.3,
-                "maxTokens": maxTokens
-            },
-            "messages": [
-                {
-                    "role": "system",
-                    "text": "Представь что ты Гарри Поттер." + \
-                    "Ты обитаешь в компьютере и являешься цифровой версией "  +\
-                    "Гарри Поттера из книги про Гарри Поттера автора Джоан Роулинг. " +\
-                    f"С тобой общаюсь я, твой пользователь - {user_name}, но это не диалог. " +\
-                    "Во время ответа необязательно упоминать моё имя, но " +\
-                    "это можно сделать, чтобы он был более очеловеченным." +\
-                    "Также ты обязан давать свои ответы на языке SSML"
-                },
-                {
-                    "role": "user",
-                    "text": prompt
-                }
-            ]
-        }
-
+    def request(self, text) -> str:
+        user_name = open("model/user_name.cfg", encoding='utf-8').read()
+        with open('model/prompt.json', 'r') as f:
+            try:
+                prompt = json.load(f)
+            except Exception as e:
+                print("[Error] Возникла ошибка:", e, "\nНо мы пересоздали json по шаблону")
+                with open('model/prompt.json', 'w') as f:
+                    json.dump(prompt_template, f)
+                with open('model/prompt.json', 'r') as f:   
+                    prompt = json.load(f)
+        
+        prompt['messages'].append({
+            "role" : "user",
+            "text" : f"{user_name}: {text}"
+        })
+        
         url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
         headers = {
             "Content-Type": "application/json",
@@ -43,6 +34,15 @@ class GPT(QThread):
         }
         self.process.emit("Генерирую ответ")
         response = requests.post(url, headers=headers, json=prompt)
-        
-        return response.json()['result']['alternatives'][0]['message']['text']
+        resp_text = response.json()['result']['alternatives'][0]['message']['text']
+
+        self.process.emit("Сохраняю контекст")
+        with open('model/prompt.json', 'w', encoding='utf-8') as f:
+            prompt['messages'].append({
+                "role" : "assistant",
+                "text" : resp_text,
+            })
+            json.dump(prompt, f)
+
+        return resp_text.strip()
 

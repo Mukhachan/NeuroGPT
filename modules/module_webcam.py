@@ -1,9 +1,7 @@
 import time
 from cv2 import CascadeClassifier, VideoCapture, imshow, putText, rectangle, \
 	destroyAllWindows, waitKey, data, FONT_HERSHEY_COMPLEX
-# x = time.time()
 from deepface.DeepFace import find, analyze 
-# print(time.time() - x)
 from collections import Counter
 from modules.config import CAMERA_INDEX
 import pandas as pd
