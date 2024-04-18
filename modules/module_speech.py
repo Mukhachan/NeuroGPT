@@ -23,6 +23,7 @@ from googletrans import Translator
 
 
 
+from modules.module_subprocess import ProgramStart
 from modules.module_webcam import WebCam
 
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -58,6 +59,7 @@ class AudioRecord(QThread):
         self.sgd = sgd
         self.gpt = gpt
         self.camera = None
+        self.programm_start = None
         self.audio, sample_rate = librosa.load('model\Sounds\Activate.mp3')
         self.audio_thread = multiprocessing.Process(target=sd.play, 
                                                     kwargs={
@@ -106,9 +108,17 @@ class AudioRecord(QThread):
             self.process_audio.emit("Рассказываю")
             self.synth_speech(gpt_response)
         
+
+        elif prediction == "программа":
+            text = text.replace("запусти", "").replace("включи", "").replace("стартани", "")
+            if self.programm_start == None:
+                self.programm_start = ProgramStart()
+
+            self.synth_speech(self.programm_start.start_programm(text)[1])
+
         self.finished.emit()
 
-    def wake_word_check(self, porcupine: Porcupine = None) -> None:
+    def wake_word_check(self, porcupine: Porcupine = None) -> str:
         """
         porcupine: Porcupine
             Мониторит микрофон, на Wake Word
@@ -169,7 +179,6 @@ class AudioRecord(QThread):
             
             volume = np.abs(np_data).mean()
             frames.append(data)
-            print(int(volume), sep=' ', end='')
 
             if volume > threshold:
                 volumes.append(1)

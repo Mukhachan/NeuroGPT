@@ -23,7 +23,7 @@ class WebCam:
 
 		if detect_pers == 0:  # Определяем личность
 			person = []
-			while time.time() - start_time <= 10:
+			while time.time() - start_time <= 15:
 				ret, frame = cap.read()
 				faces = self.face_classifier.detectMultiScale(
 					frame, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
@@ -62,7 +62,7 @@ class WebCam:
 		elif detect_pers == 1: # Оцениваем эмоции
 			average_emotion = []
 			
-			while time.time() - start_time <= 20:
+			while time.time() - start_time <= 15:
 				ret, frame = cap.read()
 				faces = self.face_classifier.detectMultiScale(
 					frame, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
@@ -155,7 +155,6 @@ class WebCam:
 
 			return "Фсё", "Фсё"
 
-		
 
 	def face_rec(self, frame, detect_pers: int) -> tuple[list, list]:
 		dfs = None

@@ -7,6 +7,7 @@ import numpy as np
 import pyaudio
 from modules.config import AccesKey_wwd, prompt_template, threshold_ratio
 from modules.module_GPT import GPT
+from modules.module_subprocess import ProgramStart
 # from modules.module_screen import Screen
 from googletrans import Translator
 from modules.module_webcam import WebCam
@@ -39,7 +40,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-
 translator = Translator()
 
 class MainWindow(QMainWindow):
@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         self.sgd = sgd
         self.gpt = GPT()
         self.Audiorec = AudioRecord(self.sgd, self.gpt)
-
+        self.Prgramm_start = ProgramStart()
         uic.loadUi('APP/design.ui', self)
 
         audio, sample_rate = librosa.load('model\Sounds\Activate.mp3')
@@ -73,12 +73,16 @@ class MainWindow(QMainWindow):
         try:
             self.Audiorec.finished.connect(self.on_finished)
             self.Audiorec.process_audio.connect(self.on_change_gpt)
+            self.Prgramm_start.started.connect(self.on_start_programm)
             self.gpt.process.connect(self.on_change_gpt)
             self.Audiorec.start()
 
         except Exception as e:
             print(e)
             quit('Всем спасибо. Всем пока')
+
+    def on_start_programm(self, text):
+        self.listening.setText(text)
 
     def on_change_gpt(self, state):
         self.listening.setText(state)
@@ -110,6 +114,7 @@ def console_side_voice(sgd: SGD):
 
     camera = None
     gpt = None
+    programm_start = None
 
     while True:
         try:
@@ -121,7 +126,7 @@ def console_side_voice(sgd: SGD):
                 ],
                 model_path='model\porcupine_params_ru.pv'
                 )
-            text = Audiorec.wake_word_check(porcupine)
+            text = Audiorec.wake_word_check(porcupine).lower()
             if len(text) == 0: 
                 print("Текст пуст. Заново")
                 print(text)
@@ -156,6 +161,13 @@ def console_side_voice(sgd: SGD):
                     gpt = GPT()
                 gpt_response = gpt.request(text)
                 Audiorec.synth_speech(gpt_response)
+
+            elif prediction == "программа":
+                text = text.rstrip("запусти").rstrip("включи").rstrip("стартани").rstrip("пожалуйста")
+                if programm_start == None:
+                    programm_start = ProgramStart()
+                Audiorec.synth_speech(programm_start.start_programm(text)[1])
+                
 
         except KeyboardInterrupt:
             quit()
