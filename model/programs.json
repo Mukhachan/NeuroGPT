@@ -10,5 +10,17 @@
     {
         "Program" : "браузер",
         "Path" : "C:/Program Files/Google/Chrome/Application/chrome.exe"
+    },
+    {
+        "Program" : "проводник",
+        "Path" : "explorer.exe"
+    },
+    {
+        "Program" : "блокнот",
+        "Path" : "notepad.exe"
+    },
+    {
+        "Program" : "питон",
+        "Path" : "python.exe"
     }
 ]

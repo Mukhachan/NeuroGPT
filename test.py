@@ -1,6 +1,7 @@
 from collections import deque
 import json
 import os
+import subprocess
 import time
 import pyaudio
 import wave
@@ -209,4 +210,5 @@ from modules.module_subprocess import ProgramStart
 #     print("Есть контакт")
 
 
-ProgramStart().start_programm("код")
+# ProgramStart().start_programm("код")
+
